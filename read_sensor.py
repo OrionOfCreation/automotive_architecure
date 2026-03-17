@@ -5,7 +5,7 @@ import requests  # Ajout pour les requêtes HTTP
 
 # Configuration SPI
 spi = spidev.SpiDev()
-spi.open(0, 0)
+spi.open(0, 1)
 spi.max_speed_hz = 1000000
 spi.mode = 0b00
 spi.bits_per_word = 8
