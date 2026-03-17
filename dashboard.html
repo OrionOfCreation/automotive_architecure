@@ -5,435 +5,223 @@
 <meta name="viewport" content="width=800, initial-scale=1.0"/>
 <title>VÉHICULE · HUD</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Teko:wght@300;400;600&display=swap" rel="stylesheet"/>
-<style>
-:root{
-  --bg:#080c10;--bg3:#111820;--panel:#0d1520;--border:#1a2d3e;
-  --amber:#f0a020;--red:#e03030;--red-dim:#3a0c0c;
-  --green:#20c060;--blue:#2090e0;
-  --text:#b8ccd8;--text-dim:#304050;
-  --mono:'Share Tech Mono',monospace;--head:'Teko',sans-serif;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{
-  width:800px;height:480px;overflow:hidden;
-  background:var(--bg);color:var(--text);font-family:var(--mono);font-size:11px;
-  background-image:
-    repeating-linear-gradient(0deg,transparent,transparent 29px,rgba(26,45,62,.14) 30px),
-    repeating-linear-gradient(90deg,transparent,transparent 29px,rgba(26,45,62,.08) 30px);
-}
-body::before{
-  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
-  background:repeating-linear-gradient(to bottom,transparent 0,transparent 2px,rgba(0,0,0,.05) 2px,rgba(0,0,0,.05) 4px);
-}
-#app{width:800px;height:480px;display:grid;grid-template-rows:28px 1fr 26px;padding:6px 8px 4px;gap:5px}
-header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:4px}
-.logo{font-family:var(--head);font-size:1.35rem;font-weight:600;letter-spacing:.2em;color:var(--amber);text-shadow:0 0 14px rgba(240,160,32,.45)}
-.logo span{color:var(--text-dim);font-weight:300}
-#status-bar{display:flex;gap:14px;font-size:.62rem;color:var(--text-dim);letter-spacing:.08em}
-#last-update{color:var(--green)}
-#conn-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink-c 2s ease-in-out infinite}
-@keyframes blink-c{0%,100%{opacity:1}50%{opacity:.3}}
-main{display:grid;grid-template-columns:1fr 196px 1fr;gap:6px;min-height:0}
-.col{display:flex;flex-direction:column;gap:6px;min-height:0}
-.panel{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:7px 9px;position:relative;overflow:hidden;min-height:0}
-.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--amber),transparent);opacity:.28}
-.ptitle{font-family:var(--head);font-size:.8rem;letter-spacing:.16em;color:var(--amber);margin-bottom:5px;display:flex;align-items:center;gap:5px;line-height:1}
-
-/* GAS */
-#gas-panel{flex:0 0 auto}
-#gas-body{display:flex;align-items:center;gap:10px}
-#gas-icon{flex:0 0 42px;height:42px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.35rem;transition:border-color .3s,box-shadow .3s}
-#gas-right{flex:1;display:flex;flex-direction:column;gap:4px}
-#gas-track{height:7px;background:var(--bg3);border-radius:4px;overflow:hidden}
-#gas-bar{height:100%;width:0%;border-radius:4px;background:#30d060;transition:width .35s,background .35s}
-#gas-nums{display:flex;justify-content:space-between;align-items:baseline}
-#gas-val{font-family:var(--head);font-size:1.25rem;font-weight:600;color:#30d060;line-height:1;transition:color .3s}
-#gas-unit{font-size:.57rem;letter-spacing:.1em;color:var(--text-dim)}
-#gas-status{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:#30d060;transition:color .3s}
-#gas-scale{display:flex;gap:2px;margin-top:2px}
-.gs{height:3px;border-radius:1px}
-
-/* LIGHTS */
-#lights-panel{flex:1 1 0}
-.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px;height:calc(100% - 20px)}
-.li{background:var(--bg3);border:1px solid var(--border);border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px;transition:border-color .2s,background .2s}
-.li.on{border-color:var(--amber);background:rgba(240,160,32,.07)}
-.li.onb{border-color:var(--blue);background:rgba(32,144,224,.07)}
-.li.blink{border-color:var(--amber);background:rgba(240,160,32,.07);animation:wblink .5s step-end infinite}
-@keyframes wblink{0%,100%{opacity:1}50%{opacity:.18}}
-.li-icon{font-size:1.25rem;filter:grayscale(1) brightness(.28);transition:filter .2s}
-.li.on .li-icon,.li.blink .li-icon,.li.onb .li-icon{filter:grayscale(0) brightness(1)}
-.li-label{font-size:.57rem;letter-spacing:.05em;color:var(--text-dim);text-align:center;line-height:1.2}
-.li-st{font-size:.6rem;color:var(--text-dim)}
-.li.on .li-st,.li.blink .li-st{color:var(--amber)}
-.li.onb .li-st{color:var(--blue)}
-
-/* SPEEDOMETER */
-#speed-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 5px}
-#spd-wrap{position:relative;width:168px;height:168px}
-#spd-canvas{display:block}
-#spd-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
-#spd-num{font-family:var(--head);font-size:2.9rem;font-weight:600;color:var(--amber);line-height:1;text-shadow:0 0 18px rgba(240,160,32,.6)}
-#spd-unit{font-size:.6rem;letter-spacing:.18em;color:var(--text-dim);margin-top:1px}
-
-/* RADAR */
-#radar-panel{flex:1 1 0}
-#bumper-wrap{display:flex;justify-content:center;margin-bottom:5px}
-.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-.rsensor{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:5px 6px;display:flex;flex-direction:column;gap:3px}
-.rlabel{font-size:.57rem;letter-spacing:.07em;color:var(--text-dim)}
-.rtrack{height:5px;background:var(--bg);border-radius:3px;overflow:hidden}
-.rbar{height:100%;border-radius:3px;transition:width .3s,background .3s}
-.rval{font-size:.73rem;color:var(--text);text-align:right}
-
-/* AFU */
-#afu-panel{flex:0 0 auto}
-#afu-inner{display:flex;align-items:center;gap:11px;padding:2px 0}
-#afu-icon{width:44px;height:44px;border-radius:50%;border:2px solid var(--red-dim);display:flex;align-items:center;justify-content:center;font-size:1.45rem;color:var(--red-dim);background:var(--bg3);flex-shrink:0;transition:all .2s}
-#afu-icon.active{border-color:var(--red);color:var(--red);background:rgba(224,48,48,.11);box-shadow:0 0 22px rgba(224,48,48,.5);animation:apu .4s ease-in-out infinite alternate}
-@keyframes apu{from{box-shadow:0 0 10px rgba(224,48,48,.35)}to{box-shadow:0 0 32px rgba(224,48,48,.85)}}
-#afu-txt{display:flex;flex-direction:column;gap:2px}
-#afu-lbl{font-family:var(--head);font-size:1.1rem;letter-spacing:.2em;color:var(--red-dim);transition:color .2s}
-#afu-lbl.active{color:var(--red);text-shadow:0 0 9px rgba(224,48,48,.6)}
-#afu-sub{font-size:.57rem;letter-spacing:.07em;color:var(--text-dim)}
-
-/* FOOTER */
-footer{border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;padding-top:4px;overflow:hidden}
-#sim-toggle{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;padding:2px 9px;cursor:pointer;border-radius:2px;transition:all .2s;flex-shrink:0}
-#sim-toggle:hover{border-color:var(--amber);color:var(--amber)}
-#sim-ctrl{display:flex;gap:8px;align-items:center;flex:1;overflow:hidden}
-#sim-ctrl.hidden{display:none}
-.sg{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.sg label{font-size:.57rem;color:var(--text-dim);white-space:nowrap}
-.sg input[type=range]{width:55px;accent-color:var(--amber);cursor:pointer}
-.sg output{font-size:.6rem;color:var(--text);min-width:20px;text-align:right}
-.sbtn{background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:.57rem;letter-spacing:.05em;padding:2px 6px;cursor:pointer;border-radius:2px;transition:all .2s;white-space:nowrap}
-.sbtn:hover{border-color:var(--amber);color:var(--amber)}
-.sbtn.on{border-color:var(--amber);color:var(--amber);background:rgba(240,160,32,.07)}
-.sbtn.on-r{border-color:var(--red);color:var(--red);background:rgba(224,48,48,.07)}
-</style>
+<link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 <div id="app">
 
-<header>
-  <div class="logo">VÉHICULE <span>·</span> HUD</div>
-  <div id="status-bar">
-    <span><span id="conn-dot"></span></span>
-    <span>API&nbsp;localhost:5000</span>
-    <span>MAJ&nbsp;<span id="last-update">--:--:--</span></span>
-  </div>
-</header>
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header>
+    <div class="logo">VÉHICULE <span>·</span> HUD</div>
+    <div id="status-bar">
+      <span><span id="conn-dot"></span></span>
+      <span>API&nbsp;localhost:5000</span>
+      <span>MAJ&nbsp;<span id="last-update">--:--:--</span></span>
+    </div>
+  </header>
 
-<main>
+  <!-- ── Main ───────────────────────────────────────────── -->
+  <main>
 
-  <div class="col">
-    <div class="panel" id="gas-panel">
-      <div class="ptitle">⬡ GAZ HABITACLE</div>
-      <div id="gas-body">
-        <div id="gas-icon">💨</div>
-        <div id="gas-right">
+    <!-- COL GAUCHE : Gaz + AFU -->
+    <div class="col">
+
+      <div class="panel" id="gas-panel">
+        <div class="ptitle">⬡ GAZ HABITACLE</div>
+        <div id="gas-gauge">
+          <canvas id="gas-canvas" width="174" height="87"></canvas>
+        </div>
+        <div id="gas-reading">
+          <span id="gas-val">0</span>
+          <span id="gas-unit">PPM</span>
+        </div>
+        <div id="gas-badge"><span id="gas-status">NOMINAL</span></div>
+        <div id="gas-bar-wrap">
           <div id="gas-track"><div id="gas-bar"></div></div>
-          <div id="gas-nums">
-            <span id="gas-val">0</span>
-            <span id="gas-unit">/ 255 ppm</span>
-          </div>
-          <div id="gas-status">NOMINAL</div>
-          <div id="gas-scale">
-            <div class="gs" style="flex:85;background:#20c060"></div>
-            <div class="gs" style="flex:43;background:#e0a020"></div>
-            <div class="gs" style="flex:127;background:#e03030"></div>
+          <div id="gas-zones">
+            <span>0</span><span>85</span><span>170</span><span>255</span>
           </div>
         </div>
       </div>
-    </div>
 
+      <div class="panel" id="afu-panel">
+        <div id="afu-ring">🛑</div>
+        <div id="afu-lbl">AFU</div>
+        <div id="afu-sub">Freinage d'urgence<br>automatique</div>
+      </div>
+
+    </div><!-- /col gauche -->
+
+    <!-- COL CENTRE : Vitesse + Radar -->
+    <div class="col">
+
+      <div class="panel" id="speed-panel">
+        <div class="ptitle" style="text-align:center">◉ VITESSE</div>
+        <div id="spd-wrap">
+          <canvas id="spd-canvas" width="192" height="192"></canvas>
+          <div id="spd-ov">
+            <span id="spd-num">0</span>
+            <span id="spd-unit">KM/H</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="radar-panel">
+        <div class="ptitle">◈ RADAR · ARRIÈRE</div>
+
+        <!--
+          Vue de dessus – arrière du véhicule (pare-chocs face au lecteur).
+          Capteurs de gauche à droite :
+            arc-age = arr_g_ext   |   arc-agi = arr_g_int
+            arc-adi = arr_d_int   |   arc-ade = arr_d_ext
+        -->
+        <div id="bumper-wrap">
+          <svg viewBox="0 0 195 46" width="192" height="46">
+            <!-- carrosserie -->
+            <rect x="2"  y="2"  width="191" height="24" rx="6"
+                  fill="#0c1520" stroke="#1a2d3e" stroke-width="1.2"/>
+            <rect x="12" y="5"  width="171" height="16" rx="4"
+                  fill="#080f18" stroke="#142030" stroke-width=".7"/>
+            <!-- feux arrière (s'allument avec les clignotants) -->
+            <rect id="tl-l" x="4"   y="6"  width="22" height="10" rx="3"
+                  fill="#1a0808" stroke="#2a1010" stroke-width=".8"/>
+            <rect id="tl-r" x="169" y="6"  width="22" height="10" rx="3"
+                  fill="#1a0808" stroke="#2a1010" stroke-width=".8"/>
+            <!-- pare-chocs -->
+            <rect x="10" y="26" width="175" height="6" rx="2" fill="#132030"/>
+            <!-- bossages capteurs -->
+            <circle cx="32"  cy="29" r="2" fill="#0a1218"/>
+            <circle cx="75"  cy="29" r="2" fill="#0a1218"/>
+            <circle cx="120" cy="29" r="2" fill="#0a1218"/>
+            <circle cx="163" cy="29" r="2" fill="#0a1218"/>
+            <!-- arcs de détection (s'ouvrent vers le bas = derrière le véhicule) -->
+            <path id="arc-age" d="M 16 32 A 16 16 0 0 1 48 32"
+                  fill="none" stroke="#1a2d3e" stroke-width="3.5" stroke-linecap="round"/>
+            <path id="arc-agi" d="M 59 32 A 16 16 0 0 1 91 32"
+                  fill="none" stroke="#1a2d3e" stroke-width="3.5" stroke-linecap="round"/>
+            <path id="arc-adi" d="M 104 32 A 16 16 0 0 1 136 32"
+                  fill="none" stroke="#1a2d3e" stroke-width="3.5" stroke-linecap="round"/>
+            <path id="arc-ade" d="M 147 32 A 16 16 0 0 1 179 32"
+                  fill="none" stroke="#1a2d3e" stroke-width="3.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <!-- Barres de proximité (danger = barre pleine) -->
+        <div id="sensor-row">
+          <div class="rsens">
+            <div class="rlbl">ARR.G<br>ext.</div>
+            <div class="rtrack"><div class="rbar" id="bar-age"></div></div>
+            <div class="rval"  id="val-age">255</div>
+          </div>
+          <div class="rsens">
+            <div class="rlbl">ARR.G<br>int.</div>
+            <div class="rtrack"><div class="rbar" id="bar-agi"></div></div>
+            <div class="rval"  id="val-agi">255</div>
+          </div>
+          <div class="rsens">
+            <div class="rlbl">ARR.D<br>int.</div>
+            <div class="rtrack"><div class="rbar" id="bar-adi"></div></div>
+            <div class="rval"  id="val-adi">255</div>
+          </div>
+          <div class="rsens">
+            <div class="rlbl">ARR.D<br>ext.</div>
+            <div class="rtrack"><div class="rbar" id="bar-ade"></div></div>
+            <div class="rval"  id="val-ade">255</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /col centre -->
+
+    <!-- COL DROITE : Éclairage pleine hauteur -->
     <div class="panel" id="lights-panel">
       <div class="ptitle">◐ ÉCLAIRAGE</div>
       <div class="lgrid">
+
         <div class="li" id="li-low">
           <div class="li-icon">🔆</div>
           <div class="li-label">Feux de<br>croisement</div>
           <div class="li-st" id="ls-low">OFF</div>
         </div>
+
         <div class="li" id="li-high">
           <div class="li-icon">💡</div>
           <div class="li-label">Pleins<br>phares</div>
           <div class="li-st" id="ls-high">OFF</div>
         </div>
+
         <div class="li" id="li-left">
-          <div class="li-icon">◀</div>
-          <div class="li-label">Clignotant<br>Gauche</div>
+          <div class="li-icon" style="font-size:3.2rem;color:#f0a020">◀</div>
+          <div class="li-label">Clignotant<br>gauche</div>
           <div class="li-st" id="ls-left">OFF</div>
         </div>
+
         <div class="li" id="li-right">
-          <div class="li-icon">▶</div>
-          <div class="li-label">Clignotant<br>Droit</div>
+          <div class="li-icon" style="font-size:3.2rem;color:#f0a020">▶</div>
+          <div class="li-label">Clignotant<br>droit</div>
           <div class="li-st" id="ls-right">OFF</div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="panel" id="speed-panel">
-    <div class="ptitle" style="justify-content:center">◉ VITESSE</div>
-    <div id="spd-wrap">
-      <canvas id="spd-canvas" width="168" height="168"></canvas>
-      <div id="spd-ov">
-        <div id="spd-num">0</div>
-        <div id="spd-unit">KM/H</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col">
-    <div class="panel" id="radar-panel">
-      <div class="ptitle">◈ RADAR · ARRIÈRE</div>
-      <div id="bumper-wrap">
-        <svg viewBox="0 0 260 82" width="224" height="70">
-          <rect x="0" y="58" width="260" height="24" rx="2" fill="#0d1520" stroke="#1a2d3e" stroke-width="1"/>
-          <rect x="10" y="40" width="240" height="22" rx="4" fill="#111820" stroke="#1a2d3e" stroke-width="1.2"/>
-          <rect x="95" y="44" width="70" height="13" rx="2" fill="#0d1520" stroke="#1e3040" stroke-width=".7"/>
-          <text x="130" y="53" text-anchor="middle" font-family="Share Tech Mono" font-size="6.5" fill="#2d4050">AB-123-CD</text>
-          <rect x="12" y="42" width="28" height="16" rx="3" fill="#1a0808" stroke="#2a1010" stroke-width=".8" id="tl-l"/>
-          <rect x="220" y="42" width="28" height="16" rx="3" fill="#1a0808" stroke="#2a1010" stroke-width=".8" id="tl-r"/>
-          <rect x="42" y="45" width="14" height="10" rx="2" fill="#121820" stroke="#1a2d3e" stroke-width=".5"/>
-          <rect x="204" y="45" width="14" height="10" rx="2" fill="#121820" stroke="#1a2d3e" stroke-width=".5"/>
-          <circle cx="22"  cy="40" r="3" fill="#1a2d3e" id="dot-fl"/>
-          <circle cx="80"  cy="40" r="3" fill="#1a2d3e" id="dot-fr"/>
-          <circle cx="180" cy="40" r="3" fill="#1a2d3e" id="dot-rl"/>
-          <circle cx="238" cy="40" r="3" fill="#1a2d3e" id="dot-rr"/>
-          <path id="arc-fl" d="M 22 40 Q 2 26 8 8"     fill="none" stroke="#1a2d3e" stroke-width="2.5" stroke-linecap="round"/>
-          <path id="arc-fr" d="M 80 40 Q 60 20 74 4"    fill="none" stroke="#1a2d3e" stroke-width="2.5" stroke-linecap="round"/>
-          <path id="arc-rl" d="M 180 40 Q 200 20 186 4" fill="none" stroke="#1a2d3e" stroke-width="2.5" stroke-linecap="round"/>
-          <path id="arc-rr" d="M 238 40 Q 258 26 252 8" fill="none" stroke="#1a2d3e" stroke-width="2.5" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <div class="rgrid">
-        <div class="rsensor"><div class="rlabel">Arr. G. ext.</div><div class="rtrack"><div class="rbar" id="bar-fl"></div></div><div class="rval" id="val-fl">255</div></div>
-        <div class="rsensor"><div class="rlabel">Arr. G. int.</div><div class="rtrack"><div class="rbar" id="bar-fr"></div></div><div class="rval" id="val-fr">255</div></div>
-        <div class="rsensor"><div class="rlabel">Arr. D. int.</div><div class="rtrack"><div class="rbar" id="bar-rl"></div></div><div class="rval" id="val-rl">255</div></div>
-        <div class="rsensor"><div class="rlabel">Arr. D. ext.</div><div class="rtrack"><div class="rbar" id="bar-rr"></div></div><div class="rval" id="val-rr">255</div></div>
       </div>
     </div>
 
-    <div class="panel" id="afu-panel">
-      <div class="ptitle">⚠ SÉCURITÉ ACTIVE</div>
-      <div id="afu-inner">
-        <div id="afu-icon">🛑</div>
-        <div id="afu-txt">
-          <div id="afu-lbl">AFU</div>
-          <div id="afu-sub">Freinage d'urgence automatique</div>
-        </div>
+  </main>
+
+  <!-- ── Footer / Simulateur ────────────────────────────── -->
+  <footer>
+    <button id="sim-toggle" onclick="toggleSim()">⚙ SIM</button>
+    <div id="sim-ctrl" class="hidden">
+      <div class="sg">
+        <label>Vit.</label>
+        <input type="range" min="0" max="100" value="0"
+               oninput="this.nextElementSibling.value=this.value; postSpeed(this.value)">
+        <output>0</output>
+      </div>
+      <div class="sg">
+        <label>Gaz</label>
+        <input type="range" min="0" max="255" value="0"
+               oninput="this.nextElementSibling.value=this.value; postGas(this.value)">
+        <output>0</output>
+      </div>
+      <div class="sg">
+        <label>AGe</label>
+        <input type="range" min="0" max="255" value="255"
+               oninput="this.nextElementSibling.value=this.value; postRadar('arr_g_ext',this.value)">
+        <output>255</output>
+      </div>
+      <div class="sg">
+        <label>AGi</label>
+        <input type="range" min="0" max="255" value="255"
+               oninput="this.nextElementSibling.value=this.value; postRadar('arr_g_int',this.value)">
+        <output>255</output>
+      </div>
+      <div class="sg">
+        <label>ADi</label>
+        <input type="range" min="0" max="255" value="255"
+               oninput="this.nextElementSibling.value=this.value; postRadar('arr_d_int',this.value)">
+        <output>255</output>
+      </div>
+      <div class="sg">
+        <label>ADe</label>
+        <input type="range" min="0" max="255" value="255"
+               oninput="this.nextElementSibling.value=this.value; postRadar('arr_d_ext',this.value)">
+        <output>255</output>
+      </div>
+      <div class="sg">
+        <button class="sbtn" id="btn-low"   onclick="toggleLight('low_beam','btn-low')">Crois.</button>
+        <button class="sbtn" id="btn-high"  onclick="toggleLight('high_beam','btn-high')">Phares</button>
+        <button class="sbtn" id="btn-left"  onclick="toggleLight('turn_left','btn-left')">◀</button>
+        <button class="sbtn" id="btn-right" onclick="toggleLight('turn_right','btn-right')">▶</button>
+        <button class="sbtn" id="btn-warn"  onclick="toggleWarning()">⚠</button>
+        <button class="sbtn" id="btn-afu"   onclick="toggleAFU()">AFU</button>
+        <button class="sbtn"                onclick="runScenario()">▶ Démo</button>
       </div>
     </div>
-  </div>
+  </footer>
 
-</main>
+</div><!-- #app -->
 
-<footer>
-  <button id="sim-toggle" onclick="toggleSim()">⚙ SIM</button>
-  <div id="sim-ctrl" class="hidden">
-    <div class="sg"><label>Vit.</label><input type="range" min="0" max="100" value="0" oninput="this.nextElementSibling.value=this.value;postSpeed(this.value)"><output>0</output></div>
-    <div class="sg"><label>Gaz</label><input type="range" min="0" max="255" value="0" oninput="this.nextElementSibling.value=this.value;postGas(this.value)"><output>0</output></div>
-    <div class="sg"><label>RGe</label><input type="range" min="0" max="255" value="255" oninput="this.nextElementSibling.value=this.value;postRadar('front_left',this.value)"><output>255</output></div>
-    <div class="sg"><label>RGi</label><input type="range" min="0" max="255" value="255" oninput="this.nextElementSibling.value=this.value;postRadar('front_right',this.value)"><output>255</output></div>
-    <div class="sg"><label>RDi</label><input type="range" min="0" max="255" value="255" oninput="this.nextElementSibling.value=this.value;postRadar('rear_left',this.value)"><output>255</output></div>
-    <div class="sg"><label>RDe</label><input type="range" min="0" max="255" value="255" oninput="this.nextElementSibling.value=this.value;postRadar('rear_right',this.value)"><output>255</output></div>
-    <div class="sg">
-      <button class="sbtn" id="btn-low"   onclick="toggleLight('low_beam','btn-low')">Crois.</button>
-      <button class="sbtn" id="btn-high"  onclick="toggleLight('high_beam','btn-high')">Phares</button>
-      <button class="sbtn" id="btn-left"  onclick="toggleLight('turn_left','btn-left')">◀</button>
-      <button class="sbtn" id="btn-right" onclick="toggleLight('turn_right','btn-right')">▶</button>
-      <button class="sbtn" id="btn-warn"  onclick="toggleWarning()">⚠</button>
-      <button class="sbtn" id="btn-afu"   onclick="toggleAFU()">AFU</button>
-      <button class="sbtn"                onclick="runScenario()">▶ Démo</button>
-    </div>
-  </div>
-</footer>
-
-</div>
-
-<script>
-const API='http://localhost:5000';
-const lightState={low_beam:0,high_beam:0,turn_left:0,turn_right:0};
-let afuState=0;
-
-// SPEEDOMETER
-const cvs=document.getElementById('spd-canvas');
-const c2=cvs.getContext('2d');
-const SZ=168;
-let cur=0,tgt=0;
-
-function drawSpeed(s){
-  c2.clearRect(0,0,SZ,SZ);
-  const cx=SZ/2,cy=SZ/2,r=70,sa=Math.PI*.75,tot=Math.PI*1.5,pct=s/100;
-  c2.beginPath();c2.arc(cx,cy,r,sa,sa+tot);
-  c2.strokeStyle='#0a1420';c2.lineWidth=12;c2.lineCap='round';c2.stroke();
-  if(pct>0){
-    const col=pct<.5?`hsl(${120-pct*80},70%,50%)`:`hsl(${40-(pct-.5)*90},80%,50%)`;
-    c2.beginPath();c2.arc(cx,cy,r,sa,sa+tot*pct);
-    c2.strokeStyle=col;c2.lineWidth=12;c2.lineCap='round';c2.stroke();
-    c2.shadowColor=col;c2.shadowBlur=13;
-    c2.beginPath();c2.arc(cx,cy,r,sa,sa+tot*pct);
-    c2.strokeStyle=col;c2.lineWidth=3;c2.stroke();
-    c2.shadowBlur=0;
-  }
-  for(let i=0;i<=10;i++){
-    const a=sa+(i/10)*tot,l=i%5===0?10:5;
-    c2.beginPath();
-    c2.moveTo(cx+Math.cos(a)*(r+4),cy+Math.sin(a)*(r+4));
-    c2.lineTo(cx+Math.cos(a)*(r+4+l),cy+Math.sin(a)*(r+4+l));
-    c2.strokeStyle=i%5===0?'#2d4a60':'#162230';
-    c2.lineWidth=i%5===0?1.5:.8;c2.lineCap='butt';c2.stroke();
-    if(i%5===0){
-      c2.fillStyle='#2d4a60';c2.font='8px Share Tech Mono';
-      c2.textAlign='center';c2.textBaseline='middle';
-      c2.fillText(i*10,cx+Math.cos(a)*(r+20),cy+Math.sin(a)*(r+20));
-    }
-  }
-  c2.beginPath();c2.arc(cx,cy,r+8,0,Math.PI*2);c2.strokeStyle='#15222e';c2.lineWidth=1;c2.stroke();
-  const na=sa+tot*pct;
-  c2.save();c2.translate(cx,cy);c2.rotate(na);
-  c2.beginPath();c2.moveTo(0,5);c2.lineTo(r-4,0);c2.lineTo(0,-5);
-  c2.fillStyle='#f0a020';c2.shadowColor='#f0a020';c2.shadowBlur=10;c2.fill();
-  c2.restore();c2.shadowBlur=0;
-  c2.beginPath();c2.arc(cx,cy,8,0,Math.PI*2);c2.fillStyle='#162230';c2.fill();
-  c2.beginPath();c2.arc(cx,cy,3.5,0,Math.PI*2);c2.fillStyle='#f0a020';c2.fill();
-}
-(function loop(){
-  const d=tgt-cur;
-  if(Math.abs(d)>.15){cur+=d*.14;drawSpeed(cur);document.getElementById('spd-num').textContent=Math.round(cur);}
-  requestAnimationFrame(loop);
-})();
-
-// RADAR
-function rcol(v){if(v<64)return'#e03030';if(v<128)return'#e08020';if(v<192)return'#c8c020';return'#1a2d3e'}
-function updateRadar(bid,vid,aid,did,v){
-  const pct=(1-v/255)*100,col=rcol(v);
-  const b=document.getElementById(bid);
-  b.style.width=pct+'%';b.style.background=col;
-  b.style.boxShadow=v<128?`0 0 5px ${col}`:'none';
-  const ve=document.getElementById(vid);ve.textContent=v;ve.style.color=col;
-  const arc=document.getElementById(aid);
-  if(arc){arc.setAttribute('stroke',col);arc.setAttribute('stroke-width',v<64?'4.5':v<128?'3.5':'2.5');}
-  const dot=document.getElementById(did);
-  if(dot)dot.setAttribute('fill',v<128?col:'#1a2d3e');
-}
-
-// GAS
-function updateGas(v){
-  const pct=(v/255)*100;
-  let col,status;
-  if(v<85){col='#30d060';status='NOMINAL';}
-  else if(v<170){col='#e0a020';status='ATTENTION';}
-  else{col='#e03030';status='CRITIQUE ⚠';}
-  const bar=document.getElementById('gas-bar');
-  bar.style.width=pct+'%';bar.style.background=col;
-  bar.style.boxShadow=v>84?`0 0 7px ${col}`:'none';
-  document.getElementById('gas-val').style.color=col;
-  document.getElementById('gas-val').textContent=v;
-  document.getElementById('gas-status').style.color=col;
-  document.getElementById('gas-status').textContent=status;
-  const ic=document.getElementById('gas-icon');
-  ic.style.borderColor=v>84?col:'var(--border)';
-  ic.style.boxShadow=v>84?`0 0 11px ${col}55`:'none';
-}
-
-// LIGHTS
-function updateLight(id,stId,val,warn=false){
-  const el=document.getElementById(id),st=document.getElementById(stId);
-  el.classList.remove('on','onb','blink');
-  if(val){
-    if(warn)el.classList.add('blink');
-    else if(id==='li-high')el.classList.add('onb');
-    else el.classList.add('on');
-    st.textContent=warn?'WARNING':'ON';
-  }else st.textContent='OFF';
-}
-function updateCarLights(l){
-  const tll=document.getElementById('tl-l'),tlr=document.getElementById('tl-r');
-  if(tll)tll.setAttribute('fill',l.turn_left?'#4a1500':'#1a0808');
-  if(tlr)tlr.setAttribute('fill',l.turn_right?'#4a1500':'#1a0808');
-}
-
-// APPLY STATE
-function apply(s){
-  const r=s.radar;
-  updateRadar('bar-fl','val-fl','arc-fl','dot-fl',r.front_left);
-  updateRadar('bar-fr','val-fr','arc-fr','dot-fr',r.front_right);
-  updateRadar('bar-rl','val-rl','arc-rl','dot-rl',r.rear_left);
-  updateRadar('bar-rr','val-rr','arc-rr','dot-rr',r.rear_right);
-  tgt=s.speed;
-  if(s.gas!==undefined)updateGas(s.gas);
-  const l=s.lights,w=l.turn_left&&l.turn_right;
-  updateLight('li-low','ls-low',l.low_beam);
-  updateLight('li-high','ls-high',l.high_beam);
-  updateLight('li-left','ls-left',l.turn_left,w);
-  updateLight('li-right','ls-right',l.turn_right,w);
-  updateCarLights(l);
-  const ai=document.getElementById('afu-icon'),al=document.getElementById('afu-lbl');
-  if(s.emergency_braking){ai.classList.add('active');al.classList.add('active');}
-  else{ai.classList.remove('active');al.classList.remove('active');}
-  document.getElementById('last-update').textContent=new Date().toTimeString().slice(0,8);
-}
-
-// POLLING
-let ok=true;
-async function poll(){
-  try{
-    const r=await fetch(`${API}/api/all`);
-    apply(await r.json());
-    if(!ok){document.getElementById('conn-dot').style.cssText='background:var(--green);box-shadow:0 0 6px var(--green)';ok=true;}
-  }catch{
-    if(ok){document.getElementById('conn-dot').style.cssText='background:var(--red);box-shadow:0 0 6px var(--red)';ok=false;}
-  }
-}
-setInterval(poll,300);poll();
-
-// SIMULATOR
-function toggleSim(){
-  const c=document.getElementById('sim-ctrl');
-  c.classList.toggle('hidden');
-  document.getElementById('sim-toggle').textContent=c.classList.contains('hidden')?'⚙ SIM':'✕ SIM';
-}
-async function post(url,body){return fetch(`${API}${url}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}
-async function postRadar(s,v){await post(`/api/radar/${s}`,{value:+v});}
-async function postSpeed(v){await post('/api/speed',{value:+v});}
-async function postGas(v){await post('/api/gas',{value:+v});}
-async function toggleLight(light,btnId){
-  lightState[light]=lightState[light]?0:1;
-  document.getElementById(btnId).classList.toggle('on',!!lightState[light]);
-  await post(`/api/lights/${light}`,{status:lightState[light]});
-}
-async function toggleWarning(){
-  const on=!(lightState.turn_left&&lightState.turn_right);
-  lightState.turn_left=lightState.turn_right=on?1:0;
-  ['btn-left','btn-right','btn-warn'].forEach(id=>document.getElementById(id).classList.toggle('on',on));
-  for(const l of['turn_left','turn_right'])await post(`/api/lights/${l}`,{status:on?1:0});
-}
-async function toggleAFU(){
-  afuState=afuState?0:1;
-  document.getElementById('btn-afu').classList.toggle('on-r',!!afuState);
-  await post('/api/braking/emergency',{status:afuState});
-}
-async function runScenario(){
-  for(let s=0;s<=70;s+=5){await post('/api/speed',{value:s});await sl(80);}
-  await post('/api/lights/low_beam',{status:1});await sl(400);
-  await post('/api/lights/turn_left',{status:1});await sl(1200);
-  await post('/api/lights/turn_left',{status:0});
-  for(let v=255;v>=20;v-=18){await post('/api/radar/front_left',{value:v});await post('/api/radar/front_right',{value:v});await sl(70);}
-  for(let g=0;g<=210;g+=12){await post('/api/gas',{value:g});await sl(55);}
-  await post('/api/braking/emergency',{status:1});
-  for(let s=70;s>=0;s-=7){await post('/api/speed',{value:s});await sl(100);}
-  await sl(800);
-  await post('/api/braking/emergency',{status:0});
-  await post('/api/lights/low_beam',{status:0});
-  for(const sensor of['front_left','front_right'])await post(`/api/radar/${sensor}`,{value:255});
-  for(let g=210;g>=0;g-=18){await post('/api/gas',{value:g});await sl(45);}
-}
-const sl=ms=>new Promise(r=>setTimeout(r,ms));
-drawSpeed(0);
-</script>
+<script src="dashboard.js"></script>
 </body>
 </html>
