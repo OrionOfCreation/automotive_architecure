@@ -2,15 +2,16 @@
 
 - installer le pyvenv avec `python -m venv pyvenv`
 - installer les librairies nécessaire via `pip install flask flask-cors`
-- lancer l'application via `./start.sh`
-- lancer la page html dashbaord.html
 
 # Ouvrir l'application en plein écran ssh 
 
-Ouvrir avec
+- créer un screen s'il n'y en a pas déjà `screen -S projet` (si "No Sockets..." quand on fait `screen ls`)
+- ouvrir avec `firefox --kiosk dashboard.html &`
+- lancer le serveur via `./start.sh`
 
-```bash
-ssh -X user@ip_adress
-export DISPLAY=:0
-firefox --kiosk dashboard.html &
-```
+# Screen
+
+- on rejoint un screen existant via `screen -x [nom du screen]`
+- on le quitte via 'ctrl+a' puis 'd'
+- on le termine via 'ctrl+a' puis 'k'
+- on les liste via `screen -ls`
