@@ -13,6 +13,7 @@ spi.bits_per_word = 8
 # Configuration API
 API_URL = "http://127.0.0.1:5000/api/gas"
 
+
 def read_ad7475():
     # Lecture de 2 octets
     raw = spi.xfer2([0x00, 0x00])
@@ -22,6 +23,7 @@ def read_ad7475():
     adc = (value >> 4) & 0x0FFF
     return adc
 
+
 try:
     print(f"Démarrage de l'envoi vers {API_URL}...")
     while True:
@@ -29,7 +31,8 @@ try:
 
         # 1. Mise à l'échelle : 12 bits (0-4095) -> 8 bits (0-255)
         # On divise par 16.058 (soit 4095/255) ou on utilise un décalage de bits
-        gas_level = int((adc_value / 4095.0) * 255)
+        # gas_level = int((adc_value / 4095.0) * 255)
+        gas_level = int(adc_value)
 
         # 2. Préparation des données pour Flask
         payload = {"value": gas_level}
@@ -37,10 +40,14 @@ try:
         try:
             # Envoi de la donnée via POST
             response = requests.post(API_URL, json=payload, timeout=1)
-            
-            status = "OK" if response.status_code == 200 else f"Erreur {response.status_code}"
-            print(f"ADC: {adc_value:4d} | Gas Level: {gas_level:3d} | API: {status}")
-            
+
+            status = (
+                "OK"
+                if response.status_code == 200
+                else f"Erreur {response.status_code}"
+            )
+            # print(f"ADC: {adc_value:4d} | Gas Level: {gas_level:3d} | API: {status}")
+
         except requests.exceptions.RequestException as e:
             print(f"Erreur de connexion à l'API : {e}")
 
