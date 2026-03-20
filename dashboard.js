@@ -1,6 +1,37 @@
 'use strict';
 
-const API = 'http://localhost:5000';
+/* ═══════════════════════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════════════════════ */
+const API        = 'http://localhost:5000';
+const INTRO_VIDEO = './cinematique.mp4';
+
+/* ═══════════════════════════════════════════════════════════
+   VIDÉO INTRO
+   - Affiché en plein écran (800×480) au lancement
+   - Disparaît automatiquement à la fin de la vidéo
+   - Disparaît aussi si l'utilisateur appuie sur Échap ou clique
+═══════════════════════════════════════════════════════════ */
+(function initIntro() {
+  const overlay = document.getElementById('video-overlay');
+  const video   = document.getElementById('intro-video');
+
+  if (!INTRO_VIDEO) { overlay.classList.add('hidden'); return; }
+
+  video.src = INTRO_VIDEO;
+
+  function dismiss() {
+    video.pause();
+    overlay.classList.add('hidden');
+  }
+
+  video.addEventListener('ended',  dismiss);
+  video.addEventListener('error',  dismiss);   // fichier absent → on passe directement
+  overlay.addEventListener('click', dismiss);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') dismiss(); });
+
+  video.play().catch(dismiss);   // autoplay bloqué par le navigateur → on ignore
+})();
 const lightState = { low_beam: 0, high_beam: 0, turn_left: 0, turn_right: 0 };
 let afuState = 0;
 
