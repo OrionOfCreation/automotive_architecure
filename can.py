@@ -20,7 +20,7 @@ def read_ad7475():
     # Concatène les 2 octets
     value = (raw[0] << 8) | raw[1]
     # Extraction des 12 bits utiles (selon ton montage)
-    adc = (value >> 4) & 0x0FFF
+    adc = (value >> 4) & 0xFFFF
     return adc
 
 
@@ -28,6 +28,7 @@ try:
     print(f"Démarrage de l'envoi vers {API_URL}...")
     while True:
         adc_value = read_ad7475()
+        print(adc_value)
 
         # 1. Mise à l'échelle : 12 bits (0-4095) -> 8 bits (0-255)
         # On divise par 16.058 (soit 4095/255) ou on utilise un décalage de bits

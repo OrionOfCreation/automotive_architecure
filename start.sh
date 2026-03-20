@@ -2,10 +2,8 @@
 
 firefox --kiosk dashboard.html &
 
-screen -Sdm sensor
-screen -r sensor -p 0 -X stuff "source pyvenv/bin/activate $(printf '\r')"
-screen -r sensor -p 0 -X stuff "python read_sensor.py $(printf '\r')"
-
-screen -Sdm app
-screen -r app -p 0 -X stuff "source pyvenv/bin/activate $(printf '\r')"
-screen -r app -p 0 -X stuff "python app.py $(printf '\r')"
+for component in can app; do
+    screen -Sdm $component
+    screen -r $component -p 0 -X stuff "source pyvenv/bin/activate $(printf '\r')"
+    screen -r $component -p 0 -X stuff "python $component.py $(printf '\r')"
+done
