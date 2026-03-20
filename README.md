@@ -1,7 +1,7 @@
 # Installation
 
 - installer le pyvenv avec `python -m venv pyvenv`
-- installer les librairies nécessaire via `pip install flask flask-cors`
+- installer les librairies nécessaire via `pip install flask flask-cors spidev requests python-can`
 
 # Ouvrir l'application en plein écran ssh 
 
