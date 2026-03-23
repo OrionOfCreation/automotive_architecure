@@ -1,0 +1,16 @@
+[Unit]
+Description=Automotive Dashboard
+After=default.target
+
+[Service]
+Type=simple
+Environment=MOZ_ENABLE_WAYLAND=1
+Environment=WAYLAND_DISPLAY=wayland-0
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+ExecStartPre=/bin/sleep 10
+ExecStart=/home/projetauto/Documents/automotive_architecure/start.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
