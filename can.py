@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Lecture SPI (AD7475 → gaz) + réception CAN bus (ID 0x100 → éclairage)
+Lecture SPI (AD7475 → gaz) + réception CAN bus
 Envoi toutes les 0.5s vers l'API Flask du tableau de bord.
 
 Dépendances :
@@ -26,6 +26,7 @@ CAN_BITRATE = 500_000      # Adapter si nécessaire (250000, 125000, …)
 # CAN IDs
 CAN_ID_LIGHTS = 0x100      # STM32 – éclairage  (1 octet, bits 0-5)
 CAN_ID_SPEED  = 0x120      # ESP32 – vitesse     (1 octet, 0..100 %)
+CAN_ID_RADAR  = 0x200      # STM32 – radar recul (decimal 200 = 0xC8, octets 0-3)
 CAN_ID_AEB    = 0x301      # ESP32 – freinage    (1 octet, 0 ou 1)
 
 # ── SPI – capteur de gaz AD7475 ───────────────────────────────────────────────
@@ -59,6 +60,21 @@ aeb_state   = {"value": 0}    # 0 ou 1
 speed_lock  = threading.Lock()
 aeb_lock    = threading.Lock()
 
+# ── État partagé radar recul (mis à jour par le thread CAN) ───────────────────
+# Les capteurs sont reçus de droite à gauche (vue depuis le véhicule) :
+#   data[0] = arr_d_ext  (Arrière Droit  Extérieur)
+#   data[1] = arr_d_int  (Arrière Droit  Intérieur)
+#   data[2] = arr_g_int  (Arrière Gauche Intérieur)
+#   data[3] = arr_g_ext  (Arrière Gauche Extérieur)
+
+radar_state = {
+    "arr_d_ext": 255,
+    "arr_d_int": 255,
+    "arr_g_int": 255,
+    "arr_g_ext": 255,
+}
+radar_lock = threading.Lock()
+
 # ── Thread de réception CAN ───────────────────────────────────────────────────
 
 def can_listener():
@@ -77,6 +93,7 @@ def can_listener():
         )
         print(f"[CAN] Interface {CAN_CHANNEL} ouverte")
         print(f"[CAN]   écoute 0x{CAN_ID_LIGHTS:03X} (éclairage)")
+        print(f"[CAN]   écoute 0x{CAN_ID_RADAR:03X}  (radar recul)")
         print(f"[CAN]   écoute 0x{CAN_ID_SPEED:03X}  (vitesse)")
         print(f"[CAN]   écoute 0x{CAN_ID_AEB:03X}  (AEB)")
     except Exception as e:
@@ -107,8 +124,18 @@ def can_listener():
                     lights_state["turn_left"]  = left_blinker
                     lights_state["turn_right"] = right_blinker
 
+            # ── 0x200 : radar recul ─────────────────────────────────────
+            # data[0..3] = distances capteurs, de droite à gauche (vue véhicule)
+            # data[4] = status  |  data[7] = counter  (ignorés)
+            elif aid == CAN_ID_RADAR:
+                with radar_lock:
+                    radar_state["arr_d_ext"] = int(msg.data[0])
+                    radar_state["arr_d_int"] = int(msg.data[1])
+                    radar_state["arr_g_int"] = int(msg.data[2])
+                    radar_state["arr_g_ext"] = int(msg.data[3])
+
             # ── 0x120 : vitesse (0..100) ─────────────────────────────────────
-            elif aid == CAN_ID_SPEED:
+            elif aid == CAN_ID_SPEED:                
                 with speed_lock:
                     speed_state["value"] = int(msg.data[0])
 
@@ -152,6 +179,14 @@ if __name__ == "__main__":
 
             gas_status = post("/api/gas", {"value": gas_level})
             print(f"[GAZ] ADC={adc_value:4d}  gas_level={gas_level:4d}  → {gas_status}")
+
+            # ── Radar recul ───────────────────────────────────────────────────
+            with radar_lock:
+                snapshot_radar = dict(radar_state)
+
+            for sensor, value in snapshot_radar.items():
+                status = post(f"/api/radar/{sensor}", {"value": value})
+                print(f"[CAN] {sensor:<12s} = {value:3d}  → {status}")
 
             # ── Éclairage ────────────────────────────────────────────────────
             with lights_lock:
