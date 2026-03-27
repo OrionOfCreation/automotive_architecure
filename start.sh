@@ -2,7 +2,7 @@
 
 cd /home/projetauto/Documents/automotive_architecure
 
-for component in app can; do
+for component in app sensor_and_can; do
     screen -X -S $component quit > /dev/null
     screen -Sdm $component
     screen -r $component -p 0 -X stuff "source pyvenv/bin/activate $(printf '\r')"
